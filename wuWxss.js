@@ -65,7 +65,9 @@ function doWxss(dir,cb){
 	}
 	function runVM(name,code){
 		let wxAppCode={},handle={cssFile:name};
-		let vm=new VM({sandbox:Object.assign(new GwxCfg(),{__wxAppCode__:wxAppCode,setCssToHead:cssRebuild.bind(handle)})});
+		let gg = new GwxCfg();
+		let tsandbox ={$gwx:GwxCfg.prototype["$gwx"],__mainPageFrameReady__:GwxCfg.prototype["$gwx"],__wxAppCode__:wxAppCode,setCssToHead:cssRebuild.bind(handle)};
+		let vm = new VM({sandbox:tsandbox});
 		vm.run(code);
 		for(let name in wxAppCode)if(name.endsWith(".wxss")){
 			handle.cssFile=path.resolve(frameName,"..",name);
@@ -83,7 +85,16 @@ function doWxss(dir,cb){
 		}
 	}
 	function runOnce(){
-		for(let name in runList)runVM(name,runList[name]);
+		for (let name in runList) {
+			// console.log(name, runList[name]);
+			var start = `var window = window || {}; var __pageFrameStartTime__ = Date.now(); 	var __webviewId__; 	var __wxAppCode__={}; 	var __mainPageFrameReady__ = function(){}; 	var __WXML_GLOBAL__={entrys:{},defines:{},modules:{},ops:[],wxs_nf_init:undefined,total_ops:0}; 	var __vd_version_info__=__vd_version_info__||{};	 
+			
+			$gwx=function(path,global){
+				if(typeof global === 'undefined') global={};if(typeof __WXML_GLOBAL__ === 'undefined') {__WXML_GLOBAL__={};
+				}__WXML_GLOBAL__.modules = __WXML_GLOBAL__.modules || {};
+			}`;
+			runVM(name, start + " \r\n" + runList[name]);
+		}
 	}
 	function transformCss(style){
 		let ast=csstree.parse(style);
